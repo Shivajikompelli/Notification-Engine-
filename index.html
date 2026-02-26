@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Engine — How It Works</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1e1e2e;
+    --accent: #6ee7b7;
+    --accent2: #f59e0b;
+    --accent3: #f87171;
+    --accent4: #60a5fa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --now: #6ee7b7;
+    --later: #f59e0b;
+    --never: #f87171;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0f172a 0%, #0a0a0f 60%, #0f0f1a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(110,231,183,0.06) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .header-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+  header h1 {
+    font-size: clamp(32px, 5vw, 60px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  /* MAIN */
+  main { padding: 40px; max-width: 1100px; margin: 0 auto; }
+
+  /* SECTION TITLES */
+  .section-title {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* OVERVIEW CARD */
+  .overview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .overview::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent4), var(--accent2));
+  }
+  .overview h2 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+  .overview p { color: var(--muted); line-height: 1.7; font-size: 15px; }
+
+  /* PIPELINE FLOW */
+  .pipeline {
+    margin-bottom: 56px;
+  }
+
+  .flow-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .flow-item {
+    display: grid;
+    grid-template-columns: 100px 40px 1fr;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .flow-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    padding-right: 16px;
+    padding-top: 20px;
+    letter-spacing: 1px;
+  }
+
+  .flow-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .flow-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    margin-top: 22px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .flow-dot.decision { border-color: var(--accent2); }
+  .flow-line {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(to bottom, var(--border), var(--border));
+    margin-top: 0;
+  }
+  .flow-item:last-child .flow-line { display: none; }
+
+  .flow-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 8px 0;
+    margin-left: 16px;
+    transition: border-color 0.2s;
+  }
+  .flow-card:hover { border-color: #2e2e4e; }
+
+  .flow-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .layer-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .l0 { background: rgba(148,163,184,0.1); color: #94a3b8; }
+  .l1 { background: rgba(96,165,250,0.1); color: var(--accent4); }
+  .l2 { background: rgba(167,139,250,0.1); color: #a78bfa; }
+  .l3 { background: rgba(110,231,183,0.1); color: var(--accent); }
+  .l4 { background: rgba(251,191,36,0.1); color: var(--accent2); }
+  .l5 { background: rgba(248,113,113,0.1); color: var(--accent3); }
+  .l6 { background: rgba(52,211,153,0.1); color: #34d399; }
+
+  .flow-card h3 { font-size: 16px; font-weight: 700; }
+  .flow-card p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-top: 6px; }
+
+  .flow-card .detail-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .detail-item .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+  .detail-item .dot.amber { background: var(--accent2); }
+  .detail-item .dot.red { background: var(--accent3); }
+  .detail-item .dot.blue { background: var(--accent4); }
+
+  /* DECISIONS SECTION */
+  .decisions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .decision-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .decision-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+  }
+  .decision-card.now::before { background: var(--now); }
+  .decision-card.later::before { background: var(--later); }
+  .decision-card.never::before { background: var(--never); }
+
+  .decision-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .decision-label.now { color: var(--now); }
+  .decision-label.later { color: var(--later); }
+  .decision-label.never { color: var(--never); }
+
+  .decision-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .decision-card .when {
+    margin-top: 14px;
+    font-size: 12px;
+    color: #475569;
+    font-family: 'Space Mono', monospace;
+    line-height: 1.6;
+  }
+
+  /* TEST RESULTS */
+  .test-section { margin-bottom: 56px; }
+
+  .test-case {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .test-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .test-name { font-weight: 700; font-size: 15px; }
+  .test-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+  .test-badge.now { background: rgba(110,231,183,0.1); color: var(--now); border: 1px solid rgba(110,231,183,0.2); }
+  .test-badge.later { background: rgba(245,158,11,0.1); color: var(--later); border: 1px solid rgba(245,158,11,0.2); }
+  .test-badge.never { background: rgba(248,113,113,0.1); color: var(--never); border: 1px solid rgba(248,113,113,0.2); }
+
+  .chain {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .chain-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .chain-icon {
+    font-size: 10px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .chain-step.pass .chain-icon::before { content: '✓'; color: var(--accent); }
+  .chain-step.skip .chain-icon::before { content: '↷'; color: var(--accent2); }
+  .chain-step.force .chain-icon::before { content: '⚡'; color: var(--accent2); }
+  .chain-step.suppress .chain-icon::before { content: '✕'; color: var(--accent3); }
+  .chain-step.ai .chain-icon::before { content: '◈'; color: #a78bfa; }
+  .chain-step.final .chain-icon::before { content: '→'; color: var(--accent4); }
+
+  /* TECH STACK */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 56px;
+  }
+  .tech-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .tech-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+  .tech-role { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* SCORE FORMULA */
+  .formula-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 56px;
+    font-family: 'Space Mono', monospace;
+  }
+  .formula-title { font-size: 11px; color: var(--muted); letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+  .formula {
+    font-size: 16px;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.8;
+  }
+  .formula .w { color: var(--accent2); }
+  .formula .v { color: var(--accent); }
+  .formula-parts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .fp {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .fp strong { color: var(--text); }
+
+  /* THRESHOLD */
+  .threshold-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 56px;
+  }
+  .threshold-title { font-size: 13px; font-weight: 700; margin-bottom: 20px; }
+  .bar-track {
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, 
+      rgba(248,113,113,0.3) 0%, 
+      rgba(248,113,113,0.3) 40%, 
+      rgba(245,158,11,0.3) 40%, 
+      rgba(245,158,11,0.3) 75%, 
+      rgba(110,231,183,0.3) 75%, 
+      rgba(110,231,183,0.3) 100%
+    );
+    position: relative;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+  .bar-marker {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: white;
+    opacity: 0.4;
+  }
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+  }
+  .bar-labels span:nth-child(1) { color: var(--never); }
+  .bar-labels span:nth-child(2) { color: var(--later); }
+  .bar-labels span:nth-child(3) { color: var(--now); }
+  .bar-values {
+    display: flex;
+    gap: 0;
+    margin-top: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    justify-content: space-between;
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+  }
+
+  @media (max-width: 700px) {
+    main { padding: 20px; }
+    header { padding: 40px 20px; }
+    .decisions-grid { grid-template-columns: 1fr; }
+    .flow-item { grid-template-columns: 60px 32px 1fr; }
+    .formula-parts { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">// Hackathon Project Explainer</div>
+  <h1>Notification <span>Engine</span><br>— How It Works</h1>
+  <p>A smart, multi-layer system that decides whether to send a notification <em>now</em>, <em>later</em>, or <em>never</em> — using rules, AI scoring, and user context.</p>
+</header>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="overview">
+    <h2>The Big Idea 💡</h2>
+    <p>
+      Every time your app wants to send a notification (e.g. "payment failed", "new promo"), instead of just blasting it out, it asks this engine: <strong>"Should I send this?"</strong>
+      The engine checks for duplicates, evaluates rules, looks at who the user is, uses an AI model to score urgency vs. fatigue — and replies with <strong>NOW</strong>, <strong>LATER</strong>, or <strong>NEVER</strong>.
+    </p>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="pipeline">
+    <div class="section-title">The Pipeline — 7 Layers</div>
+
+    <div class="flow-container">
+
+      <!-- INPUT -->
+      <div class="flow-item">
+        <div class="flow-label">INPUT</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l0">API</span>
+            <h3>Notification Request Arrives</h3>
+          </div>
+          <p>Your app sends a POST request to <code style="color:var(--accent);font-family:'Space Mono',monospace">/v1/notifications/evaluate</code> with details like user ID, event type, message, channel, and priority.</p>
+        </div>
+      </div>
+
+      <!-- L0 -->
+      <div class="flow-item">
+        <div class="flow-label">L0</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l0">L0</span>
+            <h3>Expiry Check</h3>
+          </div>
+          <p>Is this notification already too old? If an <code style="color:var(--accent4);font-family:'Space Mono',monospace">expires_at</code> was set and the time has passed, suppress it immediately without any further processing.</p>
+        </div>
+      </div>
+
+      <!-- L1 -->
+      <div class="flow-item">
+        <div class="flow-label">L1</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l1">L1</span>
+            <h3>Deduplication Guard</h3>
+          </div>
+          <p>Three-tier check to prevent spam and duplicate notifications:</p>
+          <div class="detail-list">
+            <div class="detail-item"><span class="dot blue"></span><strong>Tier 1 — Exact Match:</strong> SHA-256 fingerprint stored in Redis. Same notification within the TTL window → SUPPRESS.</div>
+            <div class="detail-item"><span class="dot blue"></span><strong>Tier 2 — Near Duplicate:</strong> MinHash LSH compares the message text. If Jaccard similarity ≥ threshold, it's close enough to suppress.</div>
+            <div class="detail-item"><span class="dot blue"></span><strong>Tier 3 — Topic Cooldown:</strong> Same user + same event type too recently? Wait. (Critical priority bypasses this.)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- L2 -->
+      <div class="flow-item">
+        <div class="flow-label">L2</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l2">L2</span>
+            <h3>Rules Engine</h3>
+          </div>
+          <p>Human-configurable rules stored in Postgres, hot-cached in memory (refreshed every 30s — no code deployment needed). Rules can:</p>
+          <div class="detail-list">
+            <div class="detail-item"><span class="dot"></span><strong>Force NOW</strong> — e.g. "Always deliver critical payment alerts immediately"</div>
+            <div class="detail-item"><span class="dot red"></span><strong>Force NEVER</strong> — e.g. "Never send SMS promotions"</div>
+            <div class="detail-item"><span class="dot amber"></span><strong>Quiet Hours</strong> — e.g. "Defer all notifications between 10pm–8am UTC"</div>
+            <div class="detail-item"><span class="dot blue"></span><strong>Channel Override</strong> — restrict which channels are allowed</div>
+          </div>
+          <p style="margin-top:10px;">If a rule fires a hard outcome (now/never), the pipeline short-circuits and skips the expensive L3+L4 steps.</p>
+        </div>
+      </div>
+
+      <!-- L3 -->
+      <div class="flow-item">
+        <div class="flow-label">L3</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l3">L3</span>
+            <h3>Context Enricher</h3>
+          </div>
+          <p>Gathers everything known about the user in parallel (fast, non-blocking) to inform the AI score:</p>
+          <div class="detail-list">
+            <div class="detail-item"><span class="dot"></span>How many notifications sent in the last 1h and 24h (fatigue counters from Redis)</div>
+            <div class="detail-item"><span class="dot"></span>User's hourly/daily caps, Do Not Disturb window, timezone</div>
+            <div class="detail-item"><span class="dot"></span>Which topics the user has opted out of</div>
+            <div class="detail-item"><span class="dot"></span>24-hour engagement heatmap (which hour of day does this user typically engage?)</div>
+            <div class="detail-item"><span class="dot"></span>Time since last notification of the same type (recency)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- L4 -->
+      <div class="flow-item">
+        <div class="flow-label">L4</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l4">L4</span>
+            <h3>AI Scorer — Groq LLM</h3>
+          </div>
+          <p>Sends a structured prompt to <strong>Groq (llama-3.1-8b-instant)</strong> — an ultra-fast LLM — with the notification details + user context. Gets back a JSON score between 0 and 1.</p>
+          <div class="detail-list">
+            <div class="detail-item"><span class="dot amber"></span><strong>Circuit Breaker:</strong> If Groq fails 3 times, the circuit "opens" and it automatically falls back to a heuristic scorer (keyword-based urgency map + math formula) — no downtime.</div>
+            <div class="detail-item"><span class="dot amber"></span><strong>Timeout:</strong> If Groq takes too long, heuristic fallback kicks in immediately.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- L5 -->
+      <div class="flow-item">
+        <div class="flow-label">L5</div>
+        <div class="flow-connector">
+          <div class="flow-dot decision"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l5">L5</span>
+            <h3>Decision Arbiter</h3>
+          </div>
+          <p>Merges all signals into one final verdict. Priority order:</p>
+          <div class="detail-list">
+            <div class="detail-item"><span class="dot amber"></span>1. Hard rule override (L2) wins over everything</div>
+            <div class="detail-item"><span class="dot red"></span>2. User has opted out of this topic → NEVER</div>
+            <div class="detail-item"><span class="dot red"></span>3. Hourly cap hit → defer or suppress</div>
+            <div class="detail-item"><span class="dot red"></span>4. Daily cap hit → NEVER</div>
+            <div class="detail-item"><span class="dot amber"></span>5. DND active → defer to optimal time</div>
+            <div class="detail-item"><span class="dot amber"></span>6. Rule said "later" → schedule optimally</div>
+            <div class="detail-item"><span class="dot"></span>7. Score ≥ 0.75 → NOW | Score ≥ 0.4 → LATER | else → NEVER</div>
+          </div>
+          <p style="margin-top:10px;">For LATER decisions, it finds the best time slot in the next 24 hours based on the user's engagement heatmap, rounded to the nearest 15 minutes.</p>
+        </div>
+      </div>
+
+      <!-- L6 -->
+      <div class="flow-item">
+        <div class="flow-label">L6</div>
+        <div class="flow-connector">
+          <div class="flow-dot"></div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-card-header">
+            <span class="layer-badge l6">L6</span>
+            <h3>Dispatcher</h3>
+          </div>
+          <p>Routes the final decision to the right place:</p>
+          <div class="detail-list">
+            <div class="detail-item"><span class="dot"></span><strong>NOW →</strong> Published to Kafka <code style="font-family:'Space Mono',monospace;color:var(--accent)">send_now_queue</code> + fatigue counters incremented in Redis</div>
+            <div class="detail-item"><span class="dot amber"></span><strong>LATER →</strong> Published to Kafka <code style="font-family:'Space Mono',monospace;color:var(--accent)">defer_queue</code> + stored in DigestBatch table for the scheduler</div>
+            <div class="detail-item"><span class="dot red"></span><strong>NEVER →</strong> Written to audit log only — nothing sent</div>
+          </div>
+          <p style="margin-top:10px;">Everything is also persisted to Postgres for audit trail and analytics. Cooldown timers are set in Redis after successful sends.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DECISIONS -->
+  <div class="section-title">The 3 Possible Outcomes</div>
+  <div class="decisions-grid" style="margin-bottom:56px">
+    <div class="decision-card now">
+      <div class="decision-label now">NOW</div>
+      <p>Send the notification immediately. Goes straight to the Kafka send queue.</p>
+      <div class="when">When:<br>• Critical priority event<br>• Hard force-now rule matched<br>• AI score ≥ 0.75</div>
+    </div>
+    <div class="decision-card later">
+      <div class="decision-label later">LATER</div>
+      <p>Schedule for a smarter time. Finds the best window based on user engagement history.</p>
+      <div class="when">When:<br>• Quiet hours active<br>• AI score between 0.4–0.75<br>• Hourly cap reached</div>
+    </div>
+    <div class="decision-card never">
+      <div class="decision-label never">NEVER</div>
+      <p>Suppress silently. Audit logged but nothing is delivered to the user.</p>
+      <div class="when">When:<br>• Exact/near duplicate detected<br>• Force-never rule matched<br>• Daily cap hit, opted out<br>• AI score &lt; 0.4</div>
+    </div>
+  </div>
+
+  <!-- SCORE FORMULA -->
+  <div class="section-title">AI Scoring Formula</div>
+  <div class="formula-box">
+    <div class="formula-title">Score Calculation (0.0 → 1.0)</div>
+    <div class="formula">
+      score = (<span class="w">0.35</span> × <span class="v">urgency</span>) + (<span class="w">0.25</span> × <span class="v">engagement</span>) − (<span class="w">0.25</span> × <span class="v">fatigue_penalty</span>) + (<span class="w">0.15</span> × <span class="v">recency_bonus</span>)
+    </div>
+    <div class="formula-parts">
+      <div class="fp"><strong>urgency</strong> — how time-sensitive is this? (payment_failed = 1.0, promo = 0.2)</div>
+      <div class="fp"><strong>engagement</strong> — how likely is this user to engage at this hour of the day?</div>
+      <div class="fp"><strong>fatigue_penalty</strong> — how many notifications has this user received recently?</div>
+      <div class="fp"><strong>recency_bonus</strong> — how long since the last notification of this type?</div>
+    </div>
+  </div>
+
+  <!-- THRESHOLD BAR -->
+  <div class="section-title">Score Thresholds</div>
+  <div class="threshold-bar" style="margin-bottom:56px">
+    <div class="threshold-title">How the score maps to a decision</div>
+    <div class="bar-track">
+      <div class="bar-marker" style="left: 40%"></div>
+      <div class="bar-marker" style="left: 75%"></div>
+    </div>
+    <div class="bar-labels">
+      <span>▌ NEVER (0 – 0.4)</span>
+      <span>▌ LATER (0.4 – 0.75)</span>
+      <span>▌ NOW (0.75 – 1.0)</span>
+    </div>
+  </div>
+
+  <!-- REAL TEST RESULTS -->
+  <div class="test-section">
+    <div class="section-title">Your 3 Test Runs — Explained</div>
+
+    <div class="test-case">
+      <div class="test-header">
+        <div class="test-name">Test 1 — payment_failed (critical priority)</div>
+        <div class="test-badge now">NOW ⚡</div>
+      </div>
+      <div class="chain">
+        <div class="chain-step pass"><span class="chain-icon"></span>L1 Dedup: No duplicate found. Critical priority → cooldown bypassed.</div>
+        <div class="chain-step force"><span class="chain-icon"></span>L2 Rules: Matched rule "Force critical payment alerts" → hard FORCE_NOW</div>
+        <div class="chain-step skip"><span class="chain-icon"></span>L3/L4: Skipped entirely — no need for AI when a hard rule already decided</div>
+        <div class="chain-step final"><span class="chain-icon"></span>L5 Arbiter: Hard rule wins → deliver immediately. Score = 1.0. AI not used.</div>
+      </div>
+    </div>
+
+    <div class="test-case">
+      <div class="test-header">
+        <div class="test-name">Test 2 — promo_offer (low priority, first time)</div>
+        <div class="test-badge later">LATER ⏱</div>
+      </div>
+      <div class="chain">
+        <div class="chain-step pass"><span class="chain-icon"></span>L1 Dedup: No duplicate. No cooldown on promo_offer. All pass.</div>
+        <div class="chain-step pass"><span class="chain-icon"></span>L2 Rules: 2 rules matched (SMS promo suppress + quiet hours) but neither forced a hard outcome.</div>
+        <div class="chain-step pass"><span class="chain-icon"></span>L3 Context: User data loaded — fatigue=0, engagement=1.0 at this hour.</div>
+        <div class="chain-step ai"><span class="chain-icon"></span>L4 AI (Groq): score=0.625 | urgency=0.00 | engagement=1.00 | fatigue=0.00 | recency=1.00</div>
+        <div class="chain-step final"><span class="chain-icon"></span>L5 Arbiter: Score 0.625 is in [0.4, 0.75) range → deferred to 14:30 UTC</div>
+      </div>
+    </div>
+
+    <div class="test-case">
+      <div class="test-header">
+        <div class="test-name">Test 3 — promo_offer again (37 seconds later)</div>
+        <div class="test-badge never">NEVER ✕</div>
+      </div>
+      <div class="chain">
+        <div class="chain-step suppress"><span class="chain-icon"></span>L1 Dedup Tier 1: SHA-256 fingerprint "4bf04b9bec82..." found in Redis within TTL window → SUPPRESS</div>
+        <div class="chain-step skip"><span class="chain-icon"></span>L2–L6: All skipped. Decision made at the very first check. AI not used.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="section-title">Technology Stack</div>
+  <div class="tech-grid">
+    <div class="tech-card">
+      <div class="tech-name">FastAPI</div>
+      <div class="tech-role">Python web framework. Handles the HTTP API layer with async support.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">PostgreSQL</div>
+      <div class="tech-role">Stores rules, user profiles, notification events, and audit logs.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Redis</div>
+      <div class="tech-role">High-speed cache for dedup fingerprints, cooldowns, and fatigue counters.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Kafka</div>
+      <div class="tech-role">Message queue. Routes NOW and LATER decisions to downstream delivery services.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Groq LLM</div>
+      <div class="tech-role">Ultra-fast AI model (llama-3.1-8b) for intelligent notification scoring.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">MinHash LSH</div>
+      <div class="tech-role">Near-duplicate detection using locality-sensitive hashing on message text.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Circuit Breaker</div>
+      <div class="tech-role">Auto-fallback if Groq fails. Prevents cascade failures in production.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Prometheus + Grafana</div>
+      <div class="tech-role">Metrics and dashboards for monitoring the engine in real time.</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-name">Docker Compose</div>
+      <div class="tech-role">Runs the entire stack (API + Scheduler + all services) locally with one command.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  notification-engine · hackathon project · all layers documented
+</footer>
+
+</body>
+</html>

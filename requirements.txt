@@ -1,0 +1,37 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+pydantic==2.7.4
+pydantic-settings==2.3.4
+
+# Database
+sqlalchemy==2.0.31
+asyncpg==0.29.0
+alembic==1.13.2
+
+# Redis
+redis[hiredis]==5.0.7
+
+# Kafka
+aiokafka==0.11.0
+
+# AI / Groq
+groq==0.9.0
+
+# Near-duplicate detection
+datasketch==1.6.5
+numpy==1.26.4
+
+# Circuit breaker
+circuitbreaker==2.0.0
+
+# Monitoring
+prometheus-fastapi-instrumentator==7.0.0
+prometheus-client==0.20.0
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.27.0
+tenacity==8.3.0
+structlog==24.2.0
+python-ulid==2.2.0
+pytz==2024.1

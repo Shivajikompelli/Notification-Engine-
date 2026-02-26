@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Engine — Complete Command Reference</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --surface2: #161b22;
+    --border: #21262d;
+    --border2: #30363d;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #39d353;
+    --orange: #f0883e;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --code-bg: #161b22;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    line-height: 1.6;
+  }
+
+  /* SIDEBAR NAV */
+  .layout { display: flex; min-height: 100vh; }
+
+  nav {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .nav-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .nav-logo .logo-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .nav-logo h2 { font-size: 15px; font-weight: 700; color: var(--text); }
+
+  .nav-section {
+    padding: 6px 20px 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 20px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: var(--text); background: var(--surface2); border-left-color: var(--border2); }
+  nav a.active { color: var(--accent); border-left-color: var(--accent); background: rgba(88,166,255,0.06); }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--green); }
+  .dot-blue { background: var(--accent); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-red { background: var(--red); }
+  .dot-purple { background: var(--purple); }
+  .dot-cyan { background: var(--cyan); }
+  .dot-orange { background: var(--orange); }
+
+  /* MAIN */
+  main { flex: 1; padding: 40px 48px; max-width: 900px; }
+
+  /* SECTION */
+  .section { margin-bottom: 64px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 22px; font-weight: 700; }
+  .section-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* CODE BLOCK */
+  .cmd-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .cmd-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-title { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .cmd-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .badge-ps { background: rgba(88,166,255,0.12); color: var(--accent); }
+  .badge-db { background: rgba(63,185,80,0.12); color: var(--green); }
+  .badge-api { background: rgba(188,140,255,0.12); color: var(--purple); }
+  .badge-check { background: rgba(240,136,62,0.12); color: var(--orange); }
+
+  .cmd-body {
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .c-comment { color: #6e7681; }
+  .c-cmd { color: var(--cyan); }
+  .c-flag { color: var(--accent); }
+  .c-string { color: #a5d6ff; }
+  .c-url { color: var(--green); }
+  .c-key { color: var(--yellow); }
+  .c-val { color: var(--orange); }
+  .c-success { color: var(--green); }
+  .c-sql { color: var(--purple); }
+  .c-kw { color: var(--red); }
+
+  /* DESCRIPTION */
+  .cmd-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .cmd-desc strong { color: var(--text); }
+
+  /* INFO BOX */
+  .info-box {
+    background: rgba(88,166,255,0.06);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #a5c8ff;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .info-box.green { background: rgba(63,185,80,0.06); border-color: rgba(63,185,80,0.2); color: #a3e6a7; }
+  .info-box.yellow { background: rgba(210,153,34,0.06); border-color: rgba(210,153,34,0.2); color: #e3c06d; }
+
+  /* API TABLE */
+  .api-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .api-table th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .api-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .api-table tr:last-child td { border-bottom: none; }
+  .api-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .method {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .get { background: rgba(63,185,80,0.12); color: var(--green); }
+  .post { background: rgba(88,166,255,0.12); color: var(--accent); }
+  .put { background: rgba(210,153,34,0.12); color: var(--yellow); }
+  .patch { background: rgba(240,136,62,0.12); color: var(--orange); }
+  .delete { background: rgba(248,81,73,0.12); color: var(--red); }
+
+  .endpoint-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .endpoint-desc { color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 32px 0;
+  }
+
+  /* STEP LIST */
+  .steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+  }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: #000;
+    font-size: 12px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-content h4 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .step-content p { font-size: 13px; color: var(--muted); }
+
+  /* DB TABLE visual */
+  .db-table-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .db-table-header {
+    padding: 12px 16px;
+    background: rgba(63,185,80,0.06);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .db-table-header h4 { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green); font-weight: 600; }
+  .db-table-header span { font-size: 12px; color: var(--muted); }
+  .db-cols { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .col-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+  }
+  .col-pill.pk { border-color: rgba(210,153,34,0.4); color: var(--yellow); }
+  .col-pill.fk { border-color: rgba(88,166,255,0.3); color: var(--accent); }
+  .col-pill.important { border-color: rgba(188,140,255,0.3); color: var(--purple); }
+
+  /* HEADER HERO */
+  .hero {
+    background: linear-gradient(135deg, #0d1117 0%, #080c10 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 48px 40px;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(58,166,255,0.04) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .hero h1 { font-size: 36px; font-weight: 800; line-height: 1.15; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { margin-top: 12px; color: var(--muted); font-size: 15px; max-width: 560px; }
+
+  @media (max-width: 800px) {
+    .layout { flex-direction: column; }
+    nav { width: 100%; height: auto; position: static; }
+    main { padding: 24px; }
+    .hero { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-tag">// NPE v1.0</div>
+    <h2>Command Reference</h2>
+  </div>
+
+  <div class="nav-section">Setup</div>
+  <a href="#start"><span class="nav-dot dot-green"></span>Start the Engine</a>
+  <a href="#verify"><span class="nav-dot dot-green"></span>Verify Everything Running</a>
+
+  <div class="nav-section">Databases</div>
+  <a href="#tables"><span class="nav-dot dot-blue"></span>All DB Tables</a>
+  <a href="#inspect-db"><span class="nav-dot dot-blue"></span>Inspect DB Data</a>
+  <a href="#redis"><span class="nav-dot dot-cyan"></span>Inspect Redis</a>
+
+  <div class="nav-section">Workflow Tests</div>
+  <a href="#test-now"><span class="nav-dot dot-green"></span>Test: Decision NOW</a>
+  <a href="#test-later"><span class="nav-dot dot-yellow"></span>Test: Decision LATER</a>
+  <a href="#test-never"><span class="nav-dot dot-red"></span>Test: Decision NEVER</a>
+  <a href="#test-batch"><span class="nav-dot dot-purple"></span>Test: Batch Evaluate</a>
+
+  <div class="nav-section">Agent / AI</div>
+  <a href="#ai-logs"><span class="nav-dot dot-purple"></span>View AI Interactions</a>
+  <a href="#ai-flow"><span class="nav-dot dot-purple"></span>AI Workflow Explained</a>
+
+  <div class="nav-section">All APIs</div>
+  <a href="#api-notifications"><span class="nav-dot dot-blue"></span>Notifications API</a>
+  <a href="#api-rules"><span class="nav-dot dot-yellow"></span>Rules API</a>
+  <a href="#api-users"><span class="nav-dot dot-orange"></span>Users API</a>
+  <a href="#api-system"><span class="nav-dot dot-cyan"></span>System API</a>
+
+  <div class="nav-section">Monitoring</div>
+  <a href="#monitoring"><span class="nav-dot dot-orange"></span>Grafana + Prometheus</a>
+  <a href="#logs"><span class="nav-dot dot-cyan"></span>Live Logs</a>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+  <div class="hero">
+    <div class="hero-tag">// Complete Command Reference</div>
+    <h1>Notification <span>Engine</span><br>Runbook</h1>
+    <p>Every command you need — from starting the engine to inspecting the database, testing the AI workflow, and calling every API.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ START -->
+  <div class="section" id="start">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(63,185,80,0.1)">🚀</div>
+      <div>
+        <h2>Start the Engine</h2>
+        <p>Build images and bring up all services</p>
+      </div>
+    </div>
+
+    <p class="cmd-desc"><strong>Step 1 — Navigate to the project folder</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">PowerShell</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">cd</span> C:\Users\ksrre\Desktop\Hacathon\notification-engine</div>
+    </div>
+
+    <p class="cmd-desc"><strong>Step 2 — First time build + start (takes ~2 mins)</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Build images and start all containers</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker compose up</span> <span class="c-flag">--build -d</span></div>
+    </div>
+
+    <p class="cmd-desc"><strong>Step 3 — Restart without rebuilding (after file changes that are volume-mounted)</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Quick restart</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker compose restart</span> api</div>
+    </div>
+
+    <p class="cmd-desc"><strong>Step 4 — Rebuild only the API after code changes</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Rebuild API only</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker compose up</span> <span class="c-flag">--build -d</span> api</div>
+    </div>
+
+    <p class="cmd-desc"><strong>Stop everything</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Stop all containers</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker compose down</span>
+
+<span class="c-comment"># Stop AND wipe all data (full reset)</span>
+<span class="c-cmd">docker compose down</span> <span class="c-flag">-v</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ VERIFY -->
+  <div class="section" id="verify">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(63,185,80,0.1)">✅</div>
+      <div>
+        <h2>Verify Everything is Running</h2>
+        <p>Check all containers and service health</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Check all containers are up</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker compose ps</span>
+
+<span class="c-comment"># Expected output — all should show "running":</span>
+<span class="c-success">npe_api          running   0.0.0.0:8000->8000/tcp
+npe_scheduler    running
+npe_postgres     running   0.0.0.0:5432->5432/tcp
+npe_redis        running   0.0.0.0:6379->6379/tcp
+npe_kafka        running   0.0.0.0:9092->9092/tcp
+npe_zookeeper    running
+npe_prometheus   running   0.0.0.0:9090->9090/tcp
+npe_grafana      running   0.0.0.0:3000->3000/tcp</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Health check — Redis + Postgres status</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body">curl.exe <span class="c-url">http://localhost:8000/health</span>
+
+<span class="c-comment"># Expected response:</span>
+<span class="c-success">{"status":"healthy","version":"1.0.0","services":{"redis":"ok","postgres":"ok"}}</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Open Swagger UI (interactive API docs)</span><span class="cmd-badge badge-api">BROWSER</span></div>
+      <div class="cmd-body"><span class="c-comment"># Open in your browser:</span>
+<span class="c-url">http://localhost:8000/docs</span>       <span class="c-comment"># Swagger UI — try all APIs here</span>
+<span class="c-url">http://localhost:8000/redoc</span>      <span class="c-comment"># ReDoc alternative docs</span>
+<span class="c-url">http://localhost:3000</span>            <span class="c-comment"># Grafana (admin / admin)</span>
+<span class="c-url">http://localhost:9090</span>            <span class="c-comment"># Prometheus raw metrics</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ DB TABLES -->
+  <div class="section" id="tables">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(88,166,255,0.1)">🗄️</div>
+      <div>
+        <h2>Database Tables</h2>
+        <p>All tables auto-created on first startup</p>
+      </div>
+    </div>
+
+    <div class="info-box green">Tables are created automatically when the API starts. You don't need to run migrations manually.</div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>notification_events</h4><span>Every notification evaluated by the engine</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">id (PK)</span>
+        <span class="col-pill fk">user_id</span>
+        <span class="col-pill">event_type</span>
+        <span class="col-pill">title</span>
+        <span class="col-pill">message</span>
+        <span class="col-pill">channel</span>
+        <span class="col-pill important">decision</span>
+        <span class="col-pill important">score</span>
+        <span class="col-pill important">ai_used</span>
+        <span class="col-pill">scheduled_at</span>
+        <span class="col-pill important">decision_reason (JSON)</span>
+        <span class="col-pill">processed_at</span>
+      </div>
+    </div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>ai_interaction_logs</h4><span>🆕 Full Groq prompt + response for every AI call</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">id (PK)</span>
+        <span class="col-pill fk">event_id</span>
+        <span class="col-pill fk">user_id</span>
+        <span class="col-pill important">prompt (full text)</span>
+        <span class="col-pill important">response (JSON)</span>
+        <span class="col-pill important">score</span>
+        <span class="col-pill important">decision</span>
+        <span class="col-pill">urgency</span>
+        <span class="col-pill">engagement</span>
+        <span class="col-pill">fatigue_penalty</span>
+        <span class="col-pill">recency_bonus</span>
+        <span class="col-pill important">reasoning</span>
+        <span class="col-pill">ai_used</span>
+        <span class="col-pill">fallback_reason</span>
+      </div>
+    </div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>rule_configs</h4><span>Business rules (editable via API without redeployment)</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">id (PK)</span>
+        <span class="col-pill important">rule_name</span>
+        <span class="col-pill important">rule_type</span>
+        <span class="col-pill important">conditions (JSON)</span>
+        <span class="col-pill">action_params (JSON)</span>
+        <span class="col-pill">priority_order</span>
+        <span class="col-pill">is_active</span>
+      </div>
+    </div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>user_profiles</h4><span>Per-user preferences, DND, caps, engagement heatmap</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">user_id (PK)</span>
+        <span class="col-pill">timezone</span>
+        <span class="col-pill important">dnd_start_hour / dnd_end_hour</span>
+        <span class="col-pill">hourly_cap_override</span>
+        <span class="col-pill">daily_cap_override</span>
+        <span class="col-pill important">opted_out_topics (JSON)</span>
+        <span class="col-pill important">engagement_heatmap (JSON)</span>
+        <span class="col-pill">segment</span>
+      </div>
+    </div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>audit_log</h4><span>Immutable record of every decision with full reason chain</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">id (PK)</span>
+        <span class="col-pill fk">event_id</span>
+        <span class="col-pill fk">user_id</span>
+        <span class="col-pill important">decision</span>
+        <span class="col-pill important">reason_chain (JSON)</span>
+        <span class="col-pill important">raw_event (JSON)</span>
+        <span class="col-pill">ai_used</span>
+        <span class="col-pill">rule_matched</span>
+      </div>
+    </div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>digest_batches</h4><span>Scheduled (LATER) notifications waiting to be sent</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">id (PK)</span>
+        <span class="col-pill fk">user_id</span>
+        <span class="col-pill">channel</span>
+        <span class="col-pill important">scheduled_at</span>
+        <span class="col-pill important">status</span>
+        <span class="col-pill">event_ids (JSON)</span>
+      </div>
+    </div>
+
+    <div class="db-table-card">
+      <div class="db-table-header"><h4>suppression_records</h4><span>Active suppression windows per user/fingerprint</span></div>
+      <div class="db-cols">
+        <span class="col-pill pk">id (PK)</span>
+        <span class="col-pill fk">user_id</span>
+        <span class="col-pill important">fingerprint</span>
+        <span class="col-pill">reason</span>
+        <span class="col-pill important">suppressed_until</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ INSPECT DB -->
+  <div class="section" id="inspect-db">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(88,166,255,0.1)">🔍</div>
+      <div>
+        <h2>Inspect Database Data</h2>
+        <p>Query Postgres directly to see what's stored</p>
+      </div>
+    </div>
+
+    <p class="cmd-desc"><strong>Connect to Postgres shell</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Open psql inside the container</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker exec</span> <span class="c-flag">-it</span> npe_postgres psql <span class="c-flag">-U</span> npe_user <span class="c-flag">-d</span> npe_db</div>
+    </div>
+
+    <p class="cmd-desc"><strong>See all tables</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">List all tables</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-sql">\dt</span></div>
+    </div>
+
+    <p class="cmd-desc"><strong>View all notification decisions</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">All evaluated notifications</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> id, user_id, event_type, decision, score, ai_used, processed_at
+<span class="c-kw">FROM</span> notification_events
+<span class="c-kw">ORDER BY</span> processed_at <span class="c-kw">DESC</span>
+<span class="c-kw">LIMIT</span> 20;</div>
+    </div>
+
+    <p class="cmd-desc"><strong>View AI interaction logs (prompts + responses)</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">All AI calls stored in DB</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> id, user_id, event_type, decision, score, reasoning, ai_used, created_at
+<span class="c-kw">FROM</span> ai_interaction_logs
+<span class="c-kw">ORDER BY</span> created_at <span class="c-kw">DESC</span>
+<span class="c-kw">LIMIT</span> 10;</div>
+    </div>
+
+    <p class="cmd-desc"><strong>See the full prompt sent to Groq</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Read exact prompt for a specific event</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> event_type, prompt, response, score, reasoning
+<span class="c-kw">FROM</span> ai_interaction_logs
+<span class="c-kw">ORDER BY</span> created_at <span class="c-kw">DESC</span>
+<span class="c-kw">LIMIT</span> 1;</div>
+    </div>
+
+    <p class="cmd-desc"><strong>View all active rules</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Rules in the database</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> rule_name, rule_type, conditions, priority_order, is_active
+<span class="c-kw">FROM</span> rule_configs
+<span class="c-kw">ORDER BY</span> priority_order;</div>
+    </div>
+
+    <p class="cmd-desc"><strong>View scheduled (LATER) notifications</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Pending digest batches</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> user_id, channel, scheduled_at, status, created_at
+<span class="c-kw">FROM</span> digest_batches
+<span class="c-kw">ORDER BY</span> scheduled_at;</div>
+    </div>
+
+    <p class="cmd-desc"><strong>Decision summary stats</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Count decisions by type</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> decision, <span class="c-kw">COUNT</span>(*) as total, <span class="c-kw">AVG</span>(score) as avg_score
+<span class="c-kw">FROM</span> notification_events
+<span class="c-kw">GROUP BY</span> decision;</div>
+    </div>
+
+    <p class="cmd-desc"><strong>Exit psql</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Quit the SQL shell</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-sql">\q</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ REDIS -->
+  <div class="section" id="redis">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(57,211,83,0.1)">⚡</div>
+      <div>
+        <h2>Inspect Redis</h2>
+        <p>See dedup fingerprints, cooldowns, fatigue counters</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Open Redis CLI</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-cmd">docker exec</span> <span class="c-flag">-it</span> npe_redis redis-cli</div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Useful Redis commands</span><span class="cmd-badge badge-db">REDIS</span></div>
+      <div class="cmd-body"><span class="c-comment"># See all keys</span>
+KEYS *
+
+<span class="c-comment"># See dedup fingerprints (exact match cache)</span>
+KEYS dedup:exact:*
+
+<span class="c-comment"># See topic cooldowns</span>
+KEYS cooldown:*
+
+<span class="c-comment"># See hourly notification counters</span>
+KEYS count:1h:*
+
+<span class="c-comment"># Check TTL remaining on a key (seconds)</span>
+TTL dedup:exact:&lt;fingerprint&gt;
+
+<span class="c-comment"># See how many notifications user u1 sent this hour</span>
+GET count:1h:u1
+
+<span class="c-comment"># Total keys stored</span>
+DBSIZE
+
+<span class="c-comment"># Clear everything (full reset of Redis)</span>
+FLUSHALL</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ TEST NOW -->
+  <div class="section" id="test-now">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(63,185,80,0.1)">⚡</div>
+      <div>
+        <h2>Test: Decision NOW</h2>
+        <p>Critical payment alert — bypasses AI, hard rule fires</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">payment_failed + critical priority</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-string">'{"user_id":"u1","event_type":"payment_failed","title":"Payment Failed","message":"Your card was declined","source":"billing","channel":"push","priority_hint":"critical"}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/notifications/evaluate</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+
+    <div class="info-box green">Expected: <strong>decision: "now"</strong> · score: 1.0 · ai_used: false · Rule "Force critical payment alerts" fires immediately</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ TEST LATER -->
+  <div class="section" id="test-later">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(210,153,34,0.1)">⏱</div>
+      <div>
+        <h2>Test: Decision LATER</h2>
+        <p>Low priority promo — AI scores it, arbiter defers</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">promo_offer + low priority (use u3 to avoid dedup from earlier)</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-string">'{"user_id":"u3","event_type":"promo_offer","title":"Special Offer","message":"50% off all plans today only!","source":"marketing","channel":"email","priority_hint":"low"}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/notifications/evaluate</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+
+    <div class="info-box" style="background:rgba(210,153,34,0.06);border-color:rgba(210,153,34,0.2);color:#e3c06d;">Expected: <strong>decision: "later"</strong> · AI scoring used · scheduled_at set to optimal time · score between 0.4–0.75</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ TEST NEVER -->
+  <div class="section" id="test-never">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(248,81,73,0.1)">✕</div>
+      <div>
+        <h2>Test: Decision NEVER</h2>
+        <p>Duplicate suppression — send the same notification twice</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Send promo_offer twice — second one is suppressed</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-comment"># First request — will get LATER</span>
+<span class="c-string">'{"user_id":"u4","event_type":"promo_offer","title":"Flash Sale","message":"Limited time deal just for you","source":"marketing","channel":"email","priority_hint":"low"}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/notifications/evaluate</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span>
+
+<span class="c-comment"># Second request — SAME content = NEVER (dedup fingerprint hit)</span>
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/notifications/evaluate</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+
+    <div class="info-box" style="background:rgba(248,81,73,0.06);border-color:rgba(248,81,73,0.2);color:#ffb3b0;">Expected on 2nd call: <strong>decision: "never"</strong> · score: null · Fingerprint seen within TTL window · No AI used</div>
+
+    <p class="cmd-desc" style="margin-top:20px"><strong>Test: Opt-out suppression</strong></p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Opt user out then send — gets NEVER</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-comment"># Step 1: Opt user u5 out of promo_offer topic</span>
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/users/u5/opt-out/promo_offer</span>
+
+<span class="c-comment"># Step 2: Send a promo — will be suppressed by arbiter</span>
+<span class="c-string">'{"user_id":"u5","event_type":"promo_offer","title":"Special Deal","message":"You wont believe this offer","source":"marketing","channel":"email","priority_hint":"low"}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/notifications/evaluate</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ TEST BATCH -->
+  <div class="section" id="test-batch">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(188,140,255,0.1)">📦</div>
+      <div>
+        <h2>Test: Batch Evaluate</h2>
+        <p>Send multiple notifications in one request</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Evaluate 3 notifications at once</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-string">'{"events":[{"user_id":"u10","event_type":"payment_failed","title":"Payment Failed","message":"Card declined","source":"billing","channel":"push","priority_hint":"critical"},{"user_id":"u10","event_type":"promo_offer","title":"Sale","message":"Big sale today","source":"marketing","channel":"email","priority_hint":"low"},{"user_id":"u10","event_type":"security_alert","title":"New Login","message":"Login from new device","source":"security","channel":"push","priority_hint":"high"}]}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/notifications/batch-evaluate</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ AI LOGS -->
+  <div class="section" id="ai-logs">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(188,140,255,0.1)">🤖</div>
+      <div>
+        <h2>View AI Interactions</h2>
+        <p>See every prompt sent to Groq and the response received</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Get all AI logs via API</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body"><span class="c-comment"># All recent AI calls</span>
+curl.exe <span class="c-url">http://localhost:8000/v1/notifications/ai-logs</span>
+
+<span class="c-comment"># Filter by user</span>
+curl.exe <span class="c-url">"http://localhost:8000/v1/notifications/ai-logs?user_id=u3"</span>
+
+<span class="c-comment"># Limit results</span>
+curl.exe <span class="c-url">"http://localhost:8000/v1/notifications/ai-logs?limit=5"</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">View AI logs directly in Postgres</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span>
+  user_id,
+  event_type,
+  decision,
+  score,
+  urgency,
+  engagement,
+  fatigue_penalty,
+  reasoning,
+  ai_used,
+  fallback_reason,
+  created_at
+<span class="c-kw">FROM</span> ai_interaction_logs
+<span class="c-kw">ORDER BY</span> created_at <span class="c-kw">DESC</span>;</div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Read full prompt for latest AI call</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> prompt <span class="c-kw">FROM</span> ai_interaction_logs <span class="c-kw">ORDER BY</span> created_at <span class="c-kw">DESC</span> <span class="c-kw">LIMIT</span> 1;</div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Read full Groq JSON response</span><span class="cmd-badge badge-db">SQL</span></div>
+      <div class="cmd-body"><span class="c-kw">SELECT</span> response <span class="c-kw">FROM</span> ai_interaction_logs <span class="c-kw">ORDER BY</span> created_at <span class="c-kw">DESC</span> <span class="c-kw">LIMIT</span> 1;</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ AI FLOW -->
+  <div class="section" id="ai-flow">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(188,140,255,0.1)">🔬</div>
+      <div>
+        <h2>AI Workflow — Step by Step</h2>
+        <p>Exactly what happens inside the engine for each request</p>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Request arrives at POST /evaluate</h4><p>FastAPI validates the JSON body against the NotificationEventIn schema.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content"><h4>L0 — Expiry check</h4><p>If expires_at is set and in the past → immediate NEVER, no further processing.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content"><h4>L1 — Dedup (3 tiers)</h4><p>SHA-256 fingerprint → MinHash similarity → topic cooldown. Any hit = NEVER. All checked against Redis.</p></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content"><h4>L2 — Rules engine</h4><p>Loads rules from in-memory cache (refreshed from Postgres every 30s). Evaluates conditions. If force_now or force_never → short-circuit, skip L3+L4.</p></div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content"><h4>L3 — Context enrichment</h4><p>Fetches user profile from Postgres + fatigue counters from Redis in parallel. Builds UserContext object.</p></div></div>
+      <div class="step"><div class="step-num">6</div><div class="step-content"><h4>L4 — Groq LLM scoring</h4><p>Builds structured prompt with notification + user context. Calls Groq llama-3.1-8b. Saves full prompt+response to ai_interaction_logs table. Falls back to heuristic on timeout/error.</p></div></div>
+      <div class="step"><div class="step-num">7</div><div class="step-content"><h4>L5 — Arbiter decision</h4><p>Merges rules + AI score + caps + DND into final NOW/LATER/NEVER. Finds optimal scheduled time for LATER decisions.</p></div></div>
+      <div class="step"><div class="step-num">8</div><div class="step-content"><h4>L6 — Dispatch</h4><p>Saves to notification_events + audit_log in Postgres. Publishes to Kafka queue. Increments Redis fatigue counters. Sets cooldown TTL.</p></div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════════ API: NOTIFICATIONS -->
+  <div class="section" id="api-notifications">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(88,166,255,0.1)">📬</div>
+      <div>
+        <h2>Notifications API</h2>
+        <p>Core evaluation, history, audit, and AI logs</p>
+      </div>
+    </div>
+
+    <table class="api-table">
+      <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td><div class="endpoint-path">/v1/notifications/evaluate</div><div class="endpoint-desc">Evaluate one notification → returns NOW/LATER/NEVER with full reason chain</div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="method post">POST</span></td>
+        <td><div class="endpoint-path">/v1/notifications/batch-evaluate</div><div class="endpoint-desc">Evaluate up to 500 notifications concurrently</div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td><div class="endpoint-path">/v1/notifications/audit/{event_id}</div><div class="endpoint-desc">Full audit trail for a specific event ID</div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td><div class="endpoint-path">/v1/notifications/history/{user_id}</div><div class="endpoint-desc">Recent decisions for a user (default last 20)</div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td><div class="endpoint-path">/v1/notifications/ai-logs</div><div class="endpoint-desc">🆕 All stored AI prompts + Groq responses. Filter: ?user_id= &limit=</div></td>
+        <td></td>
+      </tr>
+    </table>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Get audit trail for a specific event</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body">curl.exe <span class="c-url">http://localhost:8000/v1/notifications/audit/&lt;event_id&gt;</span>
+
+<span class="c-comment"># Get event_id from the evaluate response, e.g.:</span>
+curl.exe <span class="c-url">http://localhost:8000/v1/notifications/audit/7473053d-6b0d-492c-8c95-5c5bc603824a</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Get notification history for a user</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body">curl.exe <span class="c-url">http://localhost:8000/v1/notifications/history/u1</span>
+
+<span class="c-comment"># With limit</span>
+curl.exe <span class="c-url">"http://localhost:8000/v1/notifications/history/u1?limit=50"</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ API: RULES -->
+  <div class="section" id="api-rules">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(210,153,34,0.1)">📋</div>
+      <div>
+        <h2>Rules API</h2>
+        <p>Create and manage business rules — no redeployment needed</p>
+      </div>
+    </div>
+
+    <table class="api-table">
+      <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/v1/rules</div><div class="endpoint-desc">List all rules. Filter: ?active_only=true</div></td><td></td></tr>
+      <tr><td><span class="method post">POST</span></td><td><div class="endpoint-path">/v1/rules</div><div class="endpoint-desc">Create a new rule</div></td><td></td></tr>
+      <tr><td><span class="method put">PUT</span></td><td><div class="endpoint-path">/v1/rules/{rule_id}</div><div class="endpoint-desc">Update an existing rule</div></td><td></td></tr>
+      <tr><td><span class="method patch">PATCH</span></td><td><div class="endpoint-path">/v1/rules/{rule_id}/toggle</div><div class="endpoint-desc">Enable or disable a rule instantly</div></td><td></td></tr>
+      <tr><td><span class="method delete">DELETE</span></td><td><div class="endpoint-path">/v1/rules/{rule_id}</div><div class="endpoint-desc">Delete a rule permanently</div></td><td></td></tr>
+    </table>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">List all rules</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body">curl.exe <span class="c-url">http://localhost:8000/v1/rules</span>
+
+<span class="c-comment"># Active rules only</span>
+curl.exe <span class="c-url">"http://localhost:8000/v1/rules?active_only=true"</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Create a new rule — force_now for order_shipped</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body"><span class="c-string">'{"rule_name":"Force order shipped alerts","rule_type":"force_now","conditions":{"event_type":["order_shipped","order_delivered"]},"action_params":{},"priority_order":5,"is_active":true}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/rules</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Toggle a rule on/off</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body">curl.exe <span class="c-flag">-X</span> PATCH <span class="c-url">http://localhost:8000/v1/rules/&lt;rule_id&gt;/toggle</span></div>
+    </div>
+
+    <div class="info-box yellow">Rule types available: <strong>force_now</strong> · <strong>force_never</strong> · <strong>quiet_hours</strong> · <strong>channel_override</strong></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ API: USERS -->
+  <div class="section" id="api-users">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(240,136,62,0.1)">👤</div>
+      <div>
+        <h2>Users API</h2>
+        <p>Manage user preferences, opt-outs, DND, and feedback</p>
+      </div>
+    </div>
+
+    <table class="api-table">
+      <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/v1/users/{user_id}/notification-profile</div><div class="endpoint-desc">Get user's full notification state — fatigue, DND, caps, optimal send hours</div></td><td></td></tr>
+      <tr><td><span class="method patch">PATCH</span></td><td><div class="endpoint-path">/v1/users/{user_id}/preferences</div><div class="endpoint-desc">Update DND hours, timezone, caps, channel prefs</div></td><td></td></tr>
+      <tr><td><span class="method post">POST</span></td><td><div class="endpoint-path">/v1/users/{user_id}/opt-out/{topic}</div><div class="endpoint-desc">Opt user out of a notification topic</div></td><td></td></tr>
+      <tr><td><span class="method delete">DELETE</span></td><td><div class="endpoint-path">/v1/users/{user_id}/opt-out/{topic}</div><div class="endpoint-desc">Re-subscribe user to a topic</div></td><td></td></tr>
+      <tr><td><span class="method post">POST</span></td><td><div class="endpoint-path">/v1/users/{user_id}/feedback</div><div class="endpoint-desc">Record opened/dismissed/clicked — updates engagement heatmap for smarter scoring</div></td><td></td></tr>
+    </table>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Get user notification profile + fatigue state</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body">curl.exe <span class="c-url">http://localhost:8000/v1/users/u1/notification-profile</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Update user DND and caps</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body"><span class="c-string">'{"dnd_start_hour":22,"dnd_end_hour":8,"timezone":"Asia/Kolkata","hourly_cap_override":3}'</span> | Out-File <span class="c-flag">-Encoding</span> utf8 body.json
+
+curl.exe <span class="c-flag">-X</span> PATCH <span class="c-url">http://localhost:8000/v1/users/u1/preferences</span> <span class="c-flag">-H</span> <span class="c-string">"Content-Type: application/json"</span> <span class="c-flag">--data-binary</span> <span class="c-string">"@body.json"</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Opt-out and re-subscribe</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body"><span class="c-comment"># Opt out of marketing</span>
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">http://localhost:8000/v1/users/u1/opt-out/marketing</span>
+
+<span class="c-comment"># Re-subscribe</span>
+curl.exe <span class="c-flag">-X</span> DELETE <span class="c-url">http://localhost:8000/v1/users/u1/opt-out/marketing</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Record user feedback — improves future AI scoring</span><span class="cmd-badge badge-api">API</span></div>
+      <div class="cmd-body"><span class="c-comment"># User opened a notification (boosts this hour's engagement score)</span>
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">"http://localhost:8000/v1/users/u1/feedback?event_id=&lt;event_id&gt;&action=opened"</span>
+
+<span class="c-comment"># User dismissed (reduces engagement score for this hour)</span>
+curl.exe <span class="c-flag">-X</span> POST <span class="c-url">"http://localhost:8000/v1/users/u1/feedback?event_id=&lt;event_id&gt;&action=dismissed"</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ API: SYSTEM -->
+  <div class="section" id="api-system">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(57,211,83,0.1)">⚙️</div>
+      <div>
+        <h2>System API</h2>
+        <p>Health, root, and Prometheus metrics</p>
+      </div>
+    </div>
+
+    <table class="api-table">
+      <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/health</div><div class="endpoint-desc">Returns Redis + Postgres status. 200 = healthy, 503 = degraded</div></td><td></td></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/</div><div class="endpoint-desc">API info — name, version, links</div></td><td></td></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/metrics</div><div class="endpoint-desc">Prometheus metrics — request counts, latency, etc.</div></td><td></td></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/docs</div><div class="endpoint-desc">Swagger UI — interactive API explorer</div></td><td></td></tr>
+      <tr><td><span class="method get">GET</span></td><td><div class="endpoint-path">/redoc</div><div class="endpoint-desc">ReDoc alternative API documentation</div></td><td></td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ MONITORING -->
+  <div class="section" id="monitoring">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(240,136,62,0.1)">📊</div>
+      <div>
+        <h2>Grafana + Prometheus</h2>
+        <p>Visual dashboards and raw metrics</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Access monitoring UIs</span><span class="cmd-badge badge-check">BROWSER</span></div>
+      <div class="cmd-body"><span class="c-url">http://localhost:3000</span>   <span class="c-comment"># Grafana — login: admin / admin</span>
+<span class="c-url">http://localhost:9090</span>   <span class="c-comment"># Prometheus raw metrics browser</span>
+<span class="c-url">http://localhost:8000/metrics</span>  <span class="c-comment"># Raw Prometheus endpoint</span></div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Useful Prometheus queries</span><span class="cmd-badge badge-check">PROMETHEUS</span></div>
+      <div class="cmd-body"><span class="c-comment"># Total HTTP requests to the API</span>
+http_requests_total
+
+<span class="c-comment"># Request rate per second</span>
+rate(http_requests_total[1m])
+
+<span class="c-comment"># Average response latency</span>
+http_request_duration_seconds_sum / http_request_duration_seconds_count</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ LOGS -->
+  <div class="section" id="logs">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(57,211,83,0.1)">📜</div>
+      <div>
+        <h2>Live Logs</h2>
+        <p>Watch the engine process requests in real time</p>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-title">Stream API logs live</span><span class="cmd-badge badge-ps">PS</span></div>
+      <div class="cmd-body"><span class="c-comment"># Follow API logs in real time</span>
+<span class="c-cmd">docker compose logs</span> <span class="c-flag">-f</span> api
+
+<span class="c-comment"># Follow scheduler logs</span>
+<span class="c-cmd">docker compose logs</span> <span class="c-flag">-f</span> scheduler
+
+<span class="c-comment"># Follow all services</span>
+<span class="c-cmd">docker compose logs</span> <span class="c-flag">-f</span>
+
+<span class="c-comment"># Filter for AI scorer events only</span>
+<span class="c-cmd">docker compose logs</span> api | Select-String <span class="c-string">"ai_scorer"</span>
+
+<span class="c-comment"># Filter for pipeline decisions</span>
+<span class="c-cmd">docker compose logs</span> api | Select-String <span class="c-string">"pipeline.complete"</span>
+
+<span class="c-comment"># Filter for dedup suppression events</span>
+<span class="c-cmd">docker compose logs</span> api | Select-String <span class="c-string">"dedup_suppressed"</span></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+</body>
+</html>
