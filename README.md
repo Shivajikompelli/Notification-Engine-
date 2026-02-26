@@ -286,3 +286,5 @@ Rule is live within **30 seconds** — no redeploy needed.
 | Database | PostgreSQL 15 |
 | Monitoring | Prometheus + Grafana |
 | Containerization | Docker Compose |
+
+

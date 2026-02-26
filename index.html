@@ -449,6 +449,30 @@
     .flow-item { grid-template-columns: 60px 32px 1fr; }
     .formula-parts { grid-template-columns: 1fr; }
   }
+
+  .page-link-section {
+  text-align: center;
+  padding: 40px;
+  border-top: 1px solid var(--border);
+}
+
+.page-link-btn {
+  display: inline-block;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent4));
+  color: var(--bg);
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-link-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(110,231,183,0.25);
+}
 </style>
 </head>
 <body>
@@ -779,7 +803,12 @@
       <div class="tech-role">Runs the entire stack (API + Scheduler + all services) locally with one command.</div>
     </div>
   </div>
-
+  <!-- LINK TO OTHER PAGE -->
+  <div class="page-link-section">
+    <a href="commands-reference.html" class="page-link-btn">
+       Open Detailed Architecture Page
+    </a>
+</div>
 </main>
 
 <footer>
