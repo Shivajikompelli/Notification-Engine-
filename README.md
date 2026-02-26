@@ -5,6 +5,9 @@ An **AI-native engine** that evaluates every incoming notification and routes it
 > Built for Cyepro Solutions — Round 1 AI Hiring Test  
 > AI tools used: Claude (design + scaffolding) — all code manually reviewed and tuned.
 
+
+WORKING OF THE ENGINE : https://shivajikompelli.github.io/Notification-Engine-/ 
+
 ---
 
 ## 🏗️ Architecture
